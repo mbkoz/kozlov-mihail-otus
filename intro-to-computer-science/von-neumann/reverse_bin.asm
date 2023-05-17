@@ -1,6 +1,6 @@
 .ORIG x3000 ; start of user space
 ; вывели приглашение на ввод
-LEA R0, PROMPT
+LEA R0, INPUT_PROMPT
 PUTS
 ; считаем адрес, в котором будет располагаться строка
 LD R1, STRING_PTR
@@ -20,6 +20,9 @@ OUT
 ; сравниваем с CR+LF
 ADD R3, R0, R2 
 BRnp READ_SYM
+; выведем приглашение на вывод
+LEA R0, OUTPUT_PROMPT
+PUTS
 ; выведем введенные символы в обратном порядке
 AND R0, R0, #0
 ADD R0, R0, R1
@@ -27,8 +30,9 @@ PUTS
 
 HALT    ; Всегда должно быть при завершении программы
 
-PROMPT          .STRINGZ    "ENTER BINARY VALUE: "  ; метка, с записанным приглашением на ввод
-STRING_PTR      .FILL       0xF00                   ; метка, с указателем на область в которой будет
+INPUT_PROMPT    .STRINGZ    "ENTER BINARY VALUE: "  ; метка, с записанным приглашением на ввод
+OUTPUT_PROMPT   .STRINGZ    "REVERSED: "
+STRING_PTR      .FILL       xF000                   ; метка, с указателем на область в которой будет
                                                     ; размещаться строка
 NEWLINE_NEG     .FILL       x-000A                  ; -"символ конца строки"
 
