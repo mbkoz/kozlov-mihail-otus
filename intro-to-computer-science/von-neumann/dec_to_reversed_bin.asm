@@ -21,12 +21,20 @@ MAIN
     LEA R0, OUTPUT_PROMPT
     PUTS                    ; вывели приглашение на вывод
     ADD R0, R1, #0          ; вернули результат в R0
-    JSR PRINT_BIN_FUNC      ; вывели двоичное представление числа
+    JSR PRINT_BIN_FUNC      ; вывели двоичное представление числа (R0 изменен)
+    ADD R0, R1, #0          ; восстановили результат в R0
+    JSR REVERSE_BIN_FUNC    ; развернули довичное представление числа
+    ADD R1, R0, #0          ; вывели прилашение на вывод 2 и вывели развернутое число
+    LEA R0, OUTPUT_PROMPT_2
+    PUTS
+    ADD R0, R1, #0
+    JSR PRINT_BIN_FUNC
     HALT
 
-STACK_PTR       .FILL       xF000               ; указатель стека
-INPUT_PROMPT    .STRINGZ    "ENTER DEC NUMBER: "; метка, с записанным приглашением на ввод
-OUTPUT_PROMPT   .STRINGZ    "\nBINARY: "        ; метка, с записанным приглашением на вывод
+STACK_PTR       .FILL       xF000                   ; указатель стека
+INPUT_PROMPT    .STRINGZ    "ENTER DEC NUMBER: "    ; метка, с записанным приглашением на ввод
+OUTPUT_PROMPT   .STRINGZ    "\nBINARY: "            ; метка, с записанным приглашением на вывод
+OUTPUT_PROMPT_2 .STRINGZ    "\nREVERSED BINARY: "
 
 ; символы, с которыми работают процедуры
 NEG_LFEED   .FILL   x-000A  ; -'\n'
@@ -155,10 +163,56 @@ PRINT_MSB_END
     LDR R7, R6, #0
     RET
 
+LSB_MASK .FILL x01
+; развернет значение регистра R0 в обратном направлении
+; R0 - регистр, в котором будет формироваться развернутое значение
+; R1 - копия входного параметра (будет исследоваться <-)
+; R2 - маска (b001), будет сдвигаться <- каждую итерацию
+; R3 - счетчик циклов (всего 16)
+; R4 - temp
+; R5 - temp
 REVERSE_BIN_FUNC
     STR R7, R6, #0
     ADD R6, R6, #1
     JSR PUSH_STACK  ; сохраняем состояние регистров в стек
+
+    ADD R1, R0, #0  ; сохранили копию входного параметра
+    LD R2, MSB_MASK
+    LD R3, ITER_NUM
+    AND R4, R4, #0  ; счетчик нулей в начале числа
+
+; сначала посчитаем количество старших нулевых разрядов
+COUNT_LEAD_ZEROES
+    ADD R3, R3, #-1             ; -1 чтобы отобразить хотя бы 1 '0'
+    BRz COUNT_LEAD_ZEROES_END
+    AND R5, R1, R2
+    BRnp COUNT_LEAD_ZEROES_END
+    ADD R4, R4, #1
+    ADD R1, R1, R1
+    BRnzp COUNT_LEAD_ZEROES
+COUNT_LEAD_ZEROES_END
+; вычислим количество итераций для разворота числа
+    LD R3, ITER_NUM
+    NOT R4, R4
+    ADD R4, R4, #1
+    ADD R3, R3, R4
+
+    LD R2, LSB_MASK ; теперь загрузим в R2 LSB
+    ADD R1, R0, #0  ; восстановим в R1 параметр
+    AND R0, R0, #0  ; подготовим R0 под ответ
+
+REVERSE_LOOP
+    ADD R3, R3, #0
+    BRz REVERSE_LOOP_END    ; проверяем счетчик циклов
+    ADD R0, R0, R0,         ; смещаем R0 влево
+    AND R5, R1, R2          ; применыем маску к копии
+    BRz SKIP_INC_REV
+    ADD R0, R0, #1
+SKIP_INC_REV
+    ADD R3, R3, #-1
+    ADD R2, R2, R2          ; смещаем маску влево
+BRnzp REVERSE_LOOP          ; повторяем пока всей маской не пройдемся по вх. числу
+REVERSE_LOOP_END
 
     JSR POP_STACK   ; возвращаем состояние регистров в стек
     ADD R6, R6, #-1
