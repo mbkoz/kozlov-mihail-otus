@@ -155,6 +155,16 @@ PRINT_MSB_END
     LDR R7, R6, #0
     RET
 
+REVERSE_BIN_FUNC
+    STR R7, R6, #0
+    ADD R6, R6, #1
+    JSR PUSH_STACK  ; сохраняем состояние регистров в стек
+
+    JSR POP_STACK   ; возвращаем состояние регистров в стек
+    ADD R6, R6, #-1
+    LDR R7, R6, #0
+    RET
+
 PUSH_STACK  ; функция для сохранения состояния рабочих регистров (R1...R5)
     ;STR R0, R6, #0
     STR R1, R6, #1
