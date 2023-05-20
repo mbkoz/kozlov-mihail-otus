@@ -9,27 +9,17 @@ MAIN
     LD R6, STACK_PTR        ; сохраним вершину стека
     LEA R0, INPUT_PROMPT    ; вывели приглашение на ввод
     PUTS
-    ; считаем набор цифр
-    ; конвертируем в число (* 10 + мл разряд) *10 подфункция
-    ; convert to bin string (place in stragith o reverse order)
-    ; trim lead zeroes
-    ; print
-    ; провести оптимизацию с моментальной конвертацией в число (а не записью в буфер)
-    
+    ; считаем десятичное число (сразу в bin представлении)
+    ; выведем двоичное представление числа (отрезав lead 0's)
 
-    JSR READ_STR_FUNC
-    PUTS
-    JSR STR_TO_NUM
-    JSR NUM_TO_BIN_STR_FUNC
-    JSR TRIM_LEAD_0
-    PUTS
+    JSR READ_NUM_FUNC       ; считаем десятичное число в r0
     HALT
 
 NEG_LFEED   .FILL   x-000A  ; -'\n'
 NEG_0       .FILL   x-30    ; -'0'
 NEG_9       .FILL   x-39    ; -'9'
 
-READ_DIGIT_FUNC     ; функция для чтения 0, 1 или LF в R0
+READ_DIGIT_FUNC     ; функция для чтения цифры из входного потока или LF если нажат ENTER
     STR R7, R6, #0  ; сначала надо сохранить адрес возврата
     ADD R6, R6, #1
     JSR PUSH_STACK  ; т.к. данный вызов его перепишет
@@ -45,35 +35,8 @@ READ_CHAR
     ADD R4, R0, R2
     BRp READ_CHAR
     OUT
+    ADD R0, R0, R1  ; вычитаем смещение, чтобы вернуть считанное число
 END_READ_CHAR
-    JSR POP_STACK
-    ADD R6, R6, #-1
-    LDR R7, R6, #0
-    RET
-
-STR_LEN         .FILL       #6              ; длина буффера для хранения строки
-STR_BUF_PTR     .BLKW       #6              ; сброшеный в 0 буфер для размещения строки
-
-READ_STR_FUNC    ; функция для чтения строки (не более пяти символов) с возвратом адреса в R0
-    STR R7, R6, #0  ; сначала надо сохранить адрес возврата
-    ADD R6, R6, #1
-    JSR PUSH_STACK  ; т.к. данный вызов его перепишет
-    LEA R1, STR_BUF_PTR
-    LD R2, STR_LEN
-    LD R3, NEG_LFEED
-    ADD R2, R2, #-1 ; сократили для хранения терминирующего символа
-READ_NEXT_DIGIT
-    JSR READ_DIGIT_FUNC
-    ADD R4, R0, R3
-    BRz READ_NEXT_DIGIT_END
-    STR R0, R1, #0
-    ADD R1, R1, #1
-    ADD R2, R2, #-1
-    BRp READ_NEXT_DIGIT
-READ_NEXT_DIGIT_END
-    AND R0, R0, #0
-    STR R0, R1, #0  ; запишем еще 0, to make simulator happy
-    LEA R0, STR_BUF_PTR ; возвращаем через r0 указатель на строку
     JSR POP_STACK
     ADD R6, R6, #-1
     LDR R7, R6, #0
@@ -92,86 +55,40 @@ MULTx10_FUNC ; увеличивает в 10 раз R0 (R0->R0)
     LDR R7, R6, #0
     RET
 
-STR_TO_NUM ; принимает строку через R0 и конвертирует в число в R0
+STR_LEN         .FILL       #6              ; длина буффера для хранения строки
+STR_BUF_PTR     .BLKW       #6              ; сброшеный в 0 буфер для размещения строки
+
+; функция последовательно читает цифры из ввода до нажатия '\n'
+; после завершения выполнения в R0 выозвращает введенное dec число
+; R0 - будет использоваться для приема символа от GETC, для умножения в MULTx10 и для взврата результата
+; R1 - число, к котое после очередного ввода цифры будет x10 и прибавляться ввод
+; R2 - хранит -'\n' для сравнения
+; R3 - временное хранилище
+
+READ_NUM_FUNC
     STR R7, R6, #0  ; сначала надо сохранить адрес возврата
     ADD R6, R6, #1
     JSR PUSH_STACK  ; т.к. данный вызов его перепишет
-    LD R3, NEG_0
-    AND R1, R1, x0  ; перенесли строку в R1
-    ADD R1, R0, #0
-    AND R0, R0, x0  ; в R0 будет копиться результат
-    LDR R2, R1, #0
-    BRz NUM_CVN_LOOP_END
-NUM_CVN_LOOP
+
+    AND R1, R1, #0  ; R1 будет хранить конечный результат
+    LD R2, NEG_LFEED
+
+READ_NEX_DIGIT_BEGIN
+    JSR READ_DIGIT_FUNC
+    ADD R4, R0, R2  ; проверили, что ввод не '\n'
+    BRz GET_NEXT_DIGIT_END
+    AND R3, R3, #0
+    ADD R3, R3, R0 ; перенести считанный символ R0 в R3
+    AND R0, R0, #0
+    ADD R0, R0, R1 ; перенесли число в R0 для умножения
     JSR MULTx10_FUNC
-    ADD R2, R2, R3  ; выстем '0' чтобы получить число
-    ADD R0, R0, R2
-    ADD R1, R1, #1
-    LDR R2, R1, #0
-    BRnp NUM_CVN_LOOP
-NUM_CVN_LOOP_END
-    JSR POP_STACK
-    ADD R6, R6, #-1
-    LDR R7, R6, #0
-    RET
-
-BIN_STR_LEN     .FILL       #16              ; длина строки для хранения 16 разрядов регистра
-BIN_STR_BUF_PTR .BLKW       #17              ; сброшеный в 0 буфер для двоичной размещения строки + терминирующий 0
-POS_0           .FILL       x30
-
-NUM_TO_BIN_STR_FUNC      ; вернет строку с двоичным представлением числа в R0
-    STR R7, R6, #0  ; сначала надо сохранить адрес возврата
-    ADD R6, R6, #1
-    JSR PUSH_STACK  ; т.к. данный вызов его перепишет
-
-    LEA R1, BIN_STR_BUF_PTR
-    LD R2, BIN_STR_LEN
-    ADD R1, R1, R2  ; указываем на конец строки
-    
-    AND R5, R5, #0  ; загрузили '\0' в конец строки
-    STR R5, R1, #0
-    ADD R1, R1, #-1
-
-    AND R3, R3, #0  ; маска
-    ADD R3, R3, #1
-
-NUM_TO_BIN_STR_CVN
-    LD R5, POS_0
-
-    AND R4, R3, R0
-    BRz SKIP_INC
-    
-    ADD R5, R5, #1
-SKIP_INC
-    STR R5, R1, #0
-    AND R5, R5, #0
-
-    ADD R3, R3, R3
-    ADD R1, R1, #-1
-    ADD R2, R2, #-1
-    BRnp NUM_TO_BIN_STR_CVN
-NUM_TO_BIN_STR_CVN_END
-
-    LEA R0, BIN_STR_BUF_PTR
-
-    JSR POP_STACK
-    ADD R6, R6, #-1
-    LDR R7, R6, #0
-    RET
-
-TRIM_LEAD_0 ; убирает из начала строки '0' (в R0)
-    STR R7, R6, #0  ; сначала надо сохранить адрес возврата
-    ADD R6, R6, #1
-    JSR PUSH_STACK  ; т.к. данный вызов его перепишет
-
-    LD R1, NEG_0
-
-TRIM_0_LOOP
-    LDR R2, R0, #0
-    ADD R2, R2, R1
-    BRz TRIM_0_LOOP
-TRIM_0_LOOP_END
-
+    ADD R0, R0, R3 ; прибавили то, что считали
+    AND R1, R1, #0
+    ADD R1, R1, R0 ; перенесли результат в R1
+    BRnzp READ_NEX_DIGIT_BEGIN
+GET_NEXT_DIGIT_END
+    AND R0, R0, #0
+    ADD R0, R0, R1 ; перенос в R0 для возврата значения
     JSR POP_STACK
     ADD R6, R6, #-1
     LDR R7, R6, #0
