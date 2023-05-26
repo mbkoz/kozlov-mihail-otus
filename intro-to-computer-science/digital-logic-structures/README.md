@@ -56,11 +56,9 @@ x - любое значение
 
 ### Задача N3.
 
-$Y = \overline{A * B * C} + \overline{A} * B =$  
-$= \overline{A * ( B * C )} + \overline{A} * B =$  
-$= \overline{A} + \overline{B * C} + \overline{A} * B =$  
-$= \overline{A} + \overline{B} + \overline{C} + \overline{A} * B =$  
-$= \overline{A} * ( 1 + B) + \overline{B} + \overline{C} =$  
+$Y = \overline{A * B * C} + A * \overline{B} =$  
+$= \overline{A} + \overline{B} + \overline{C} + A * \overline{B} =$  
+$= \overline{B} * ( 1 + A ) + \overline{A} + \overline{C} =$  
 $= \overline{A} + \overline{B} + \overline{C}$
 
 <details>
@@ -80,7 +78,7 @@ x - любое значение
 
 ### Задача N4.
 
-$Y = \overline{A} * B * C = \overline{A} * B * \overline{C} =$  
+$Y = \overline{A} * B * C + \overline{A} * B * \overline{C} =$  
 $= \overline{A} * ( B * C + B * \overline{C} ) = \overline{A} * B$  
 
 <details>
@@ -100,13 +98,10 @@ x - любое значение
 ### Задача N5.
 
 $Y = \overline{A + \overline{A} * B + \overline{A} * \overline{B}} + \overline{A + \overline{B}} =$  
-$= \overline{(A + \overline{A} * B) + (\overline{A} * \overline{B})} + \overline{A + \overline{B}} =$  
-$= \overline{A + \overline{A} * B} * \overline{\overline{A} * \overline{B}} + \overline{A} * \overline{\overline{B}} =$  
-$= ( \overline{A} * \overline{\overline{A} * B} ) * ( \overline{\overline{A}} + \overline{\overline{B}} ) + \overline{A} * B =$  
-$= ( \overline{A} * \overline{\overline{A} * B} ) * ( A + B ) + \overline{A} * B =$  
-$= A * \overline{A} * \overline{\overline{A} * B} + \overline{A} * B * \overline{\overline{A} * B} + \overline{A} * B =$  
-$= \overline{A} * B * \overline{\overline{A} * B} + \overline{A} * B =$  
-$= \overline{A} * B * ( 1 + \overline{\overline{A} * B} ) = \overline{A} * B * 1 = \overline{A} * B$  
+$= \overline{A + \overline{A} * \overline{\overline{B}} + \overline{A} * \overline{B}} + \overline{A + \overline{B}}=$  
+$= \overline{A + \overline{A}} + \overline{A + \overline{B}} =$  
+$= \overline{1} + \overline{A + \overline{B}} =$  
+$= \overline{A} * \overline{\overline{B}} = \overline{A} * B$  
 
 <details>
 
