@@ -1,4 +1,4 @@
-# INTRO TO COMPUTER SIENCE 2
+# INTRO TO COMPUTER SCIENCE 2
 
 ### Ссылка на эмулятор
 [LC-3](https://courses.grainger.illinois.edu/ece220/fa2019/lc3web_old/index.html)
@@ -38,8 +38,8 @@
 > 10001001 ➡️ 10010001
 
 **Файлы с решением:**  
-    - reverse_bin.asm
-    - reverse_bin_v2.asm
+    - reverse_bin.asm  
+    - reverse_bin_v2.asm  
 
 ##### Комментарии к решению reverse_bin.asm:
 
@@ -56,9 +56,9 @@
 
  - после ввода двоичного числа (и не только двоичного числа xD) и нажатия ENTER будет выведен результат разворота строки и сообщение об остановке процессора:
 
- > ENTER BINARY VALUE: 1011
- > REVERSED: 1101
- > ----- Halting the processor ----- 
+ > ENTER BINARY VALUE: 1011  
+ > REVERSED: 1101  
+ > ----- Halting the processor -----  
 
 
 ##### Изменене параметров запуска reverse_bin.asm:
@@ -79,13 +79,13 @@
 
  - после нажатия кнопки **Run** в поле **Console** будет выведено приглашение на ввод:
 
-> ENTER BINARY VALUE: 
+> ENTER BINARY VALUE:  
 
  - после ввода двоичного числа и нажатия ENTER будет выведен результат разворота строки и сообщение об остановке процессора:
 
- > ENTER BINARY VALUE: 1011
- > REVERSED: 1101
- > ----- Halting the processor ----- 
+ > ENTER BINARY VALUE: 1011  
+ > REVERSED: 1101  
+ > ----- Halting the processor -----  
 
 
 ##### Изменене параметров запуска reverse_bin_v2.asm:
@@ -104,8 +104,8 @@
 
  - Реализация уже вполной мере использует вызовы функций и передачу аргмуентов. В решении присутствуют и вложенные вызовы (одна функция вызывает другую)
  - Функции обозначены метками с суффиксом FUNC, например:
- > `PRINT_BIN_FUNC`
- > `READ_NUM_FUNC`
+ > `PRINT_BIN_FUNC`  
+ > `READ_NUM_FUNC`  
  - Для хранения введенного числа используется 1 регистр. Т.е. максимальное значение, которое задача может обработать корректно - **65535**
  - При выводе прогремма отсекает первые нули числа
  - Дополнительные данные о деталях решения задачи приведены в файле исходного кода **dec_to_bin.asm**
