@@ -28,6 +28,8 @@ print_number:
     push ebx
     push eax
 
+
+
     cmp  eax, 0
     jge  .positive
 
