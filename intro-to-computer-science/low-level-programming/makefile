@@ -1,19 +1,25 @@
-# build project for 1st exercise
-longest_seq: longest_seq.asm
-	nasm -f elf -g -F dwarf longest_seq.asm && ld -m elf_i386 -o longest_seq longest_seq.o
-	nm -f sysv longest_seq.o longest_seq > symt
+SOURCES = $(wildcard *.asm)
 
-# build project for 2nd exercise
-up_down: up_down.asm
-	nasm -f elf -g -F dwarf up_down.asm && ld -m elf_i386 -o up_down up_down.o
-	nm -f sysv up_down.o up_down > symt
+TARGETS = $(basename $(SOURCES))
+OBJECTS = $(addsuffix .o, $(TARGETS))
 
-# build projector 3rd exercise
-wday_search: wday_search.asm
-	nasm -f elf -g -F dwarf wday_search.asm && ld -m elf_i386 -o wday_search wday_search.o
-	nm -f sysv wday_search.o wday_search > symt
+INCPATH = -i ./3rd_party/
+DEPS    = ./3rd_party/library.asm
 
-# aux cmd
-clean_up:
-	rm ./*.o symt
+NSMFLAGS  = $(INCPATH) -f elf -g -F dwarf
+LDFLAGS  = -m elf_i386
+NMFLAGS = -f sysv
 
+.PHONY: all
+all: $(TARGETS)
+
+$(TARGETS): %: %.o
+	ld $(LDFLAGS) -o $@ $^
+	nm $(NMFLAGS) $^ $@ > sym_table
+
+%.o: %.asm $(DEPS)
+	nasm $(NSMFLAGS) -o $@ $<
+
+.PHONY: clean
+clean:
+	-rm $(TARGETS) $(OBJECTS) sym_table 2> /dev/null
