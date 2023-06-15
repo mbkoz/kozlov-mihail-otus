@@ -1,0 +1,4 @@
+tui enable
+break _start
+layout regs
+run

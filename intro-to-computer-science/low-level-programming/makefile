@@ -1,6 +1,7 @@
 SOURCES = $(wildcard *.asm)
 
 TARGETS = $(basename $(SOURCES))
+GDBTRG = $(addsuffix _gdb, $(TARGETS))
 OBJECTS = $(addsuffix .o, $(TARGETS))
 
 INCPATH = -i ./3rd_party/
@@ -23,3 +24,9 @@ $(TARGETS): %: %.o
 .PHONY: clean
 clean:
 	-rm $(TARGETS) $(OBJECTS) sym_table 2> /dev/null
+
+.PHONY: $(GDBTRG)
+
+
+longest_seq_gdb: longest_seq
+	gdb -x gdb_launch longest_seq
