@@ -12,10 +12,12 @@ _start:
     xor edx, edx    ; в edx храним самый длиный отрезок
     mov ebx, arr
     movsx ecx, byte [n]
+    cmp ecx, 0x00   ; если длина списка = 0, то сразу прыгаем в конец программы
+    je skip_swap_2:
     ; Ваш код
 start_loop:
-    cmp byte [ebx + ecx - 1], 0x01
-    jne skip_inc    ; если 1, то увеличиваем счетчик и начинаем следующую итерацию
+    cmp byte [ebx + ecx - 1], 0x01  ; SIB адресация???
+    jne skip_inc                    ; если 1, то увеличиваем счетчик и начинаем следующую итерацию
     inc eax
     jmp end_loop
 
