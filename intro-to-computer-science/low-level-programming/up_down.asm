@@ -1,8 +1,8 @@
 %include 'library.asm'
 
 section .data
-    arr db  'u', 'd', 'd', 'u', 'u', 'd', 'd', 'u'
-    n   db  8
+    arr db  'u', 'd', 'd', 'u', 'u', 'd', 'd', 'u', 'u'
+    n   db  9
 
 section .text
     global _start
@@ -13,7 +13,7 @@ _start:
     movsx eax, byte [n] ; если в конце в eax останется число == n, то этаж остался тот же
     mov ebx, arr
     movsx ecx, byte [n]
-    cmp ecx, 0x00
+    cmp ecx, 0x00       ; если количество итераций =0, то перенесемся к оценке результата
     je after_loop
 
 start_loop:
@@ -27,8 +27,13 @@ end_loop:
     loop start_loop
 
 after_loop:
-    cmp eax, byte [n]
-    
+    cmp al, byte [n]
+    je same_floor
+    mov eax, 0x00
+    jmp output
+
+same_floor:
+    mov eax, 0x01
 
 output:
     call print_number
