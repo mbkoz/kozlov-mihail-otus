@@ -1,47 +1,42 @@
 %include 'library.asm'
 
 section .data
-    arr db  0, 0, 1, 0, 1, 1, 1, 0
-    n   db  8
+    arr db  1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
+    n   db  14
 
 section .text
     global _start
     
 _start:
-    xor eax, eax    ; в eax накапливаем данные о длине отрезка
     xor edx, edx    ; в edx храним самый длиный отрезок
     mov ebx, arr
     movsx ecx, byte [n]
-    cmp ecx, 0x00   ; если длина списка = 0, то сразу прыгаем в конец программы
-    je skip_swap_2:
-    ; Ваш код
-start_loop:
-    cmp byte [ebx + ecx - 1], 0x01  ; SIB адресация???
-    jne skip_inc                    ; если 1, то увеличиваем счетчик и начинаем следующую итерацию
+    cmp ecx, 0x00
+    je final
+
+count_ones:
+    xor eax, eax    ; в eax накапливаем данные о длине отрезка
+count_ones_loop:    ; считаем 1, пока не упремся в 0
+    cmp byte [ebx + ecx - 1], 0x01
+    jne skip_zeroes
     inc eax
-    jmp end_loop
+    loop count_ones_loop
+    jmp final   ; если вывалились сюда, то массив закончился и пора подвести итоги
 
-skip_inc:
-    cmp eax, edx    ; если 0, то проверяем накопленное значение с сохраненным в edx и проматываем 0
-    jle skip_swap
+skip_zeroes:        ; проверим, как много 1 насчитали
+    cmp eax, edx
+    jle skip_zeroes_loop
     mov edx, eax
-skip_swap:
-    xor eax, eax
 
-skip_zeroes_loop:
+skip_zeroes_loop:    ; пропускаем 0, пока не найдем 1
     cmp byte [ebx + ecx - 1], 0x00
-    jne start_loop
+    jne count_ones
     loop skip_zeroes_loop
 
-    inc ecx ; если вывалились из цикла сюда, значит кончился счетчик
-            ; для корректного завершения прибавим 1
-end_loop:
-    loop start_loop
-
-    cmp eax, edx    ; eax = max (eax, edx)
-    jge skip_swap_2
+final:
+    cmp eax, edx
+    jge skip_swap
     mov eax, edx
-skip_swap_2:
-
+skip_swap:
     call print_number
     call exit
