@@ -3,3 +3,4 @@
 !*.asm
 !/makefile
 !/gdb_launch
+!README.md
