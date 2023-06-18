@@ -26,10 +26,5 @@ clean:
 	-rm $(TARGETS) $(OBJECTS) sym_table 2> /dev/null
 
 .PHONY: $(GDBTRG)
-
-
-longest_seq_gdb: longest_seq
-	gdb -x gdb_launch longest_seq
-
-wday_search_gdb: wday_search
-	gdb -x gdb_launch wday_search
+$(GDBTRG): %_gdb: %
+	gdb -x gdb_launch $^
