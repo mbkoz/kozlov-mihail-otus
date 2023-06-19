@@ -25,8 +25,7 @@ count_ones_loop:    ; считаем 1, пока не упремся в 0
 
 skip_zeroes:        ; проверим, как много 1 насчитали
     cmp eax, edx
-    jle skip_zeroes_loop
-    mov edx, eax
+    cmovg edx, eax
 
 skip_zeroes_loop:    ; пропускаем 0, пока не найдем 1
     cmp byte [ebx + ecx - 1], 0x00
@@ -35,8 +34,7 @@ skip_zeroes_loop:    ; пропускаем 0, пока не найдем 1
 
 final:
     cmp eax, edx
-    jge skip_swap
-    mov eax, edx
-skip_swap:
+    cmovl eax, edx
+
     call print_number
     call exit

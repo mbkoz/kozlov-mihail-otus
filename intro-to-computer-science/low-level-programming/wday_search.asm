@@ -4,9 +4,10 @@ section .data
     arr dd  17, 21, 13, 17, 17, 12
     n   equ ($-arr) / 4
 
+section .bss
 align       4
-stack       times 1024 dd 0;
-stack_top
+stack       resb 1024   ; для опытов со стеком
+stack_top   equ $
 
 section .text
     global _start

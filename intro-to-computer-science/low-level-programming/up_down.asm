@@ -1,8 +1,10 @@
 %include 'library.asm'
 
 section .data
-    arr db  'u', 'd', 'd', 'u', 'u', 'd', 'd', 'u'
+    arr db  'u', 'd', 'd', 'u', 'u', 'd', 'd', 'u', 'u'
     n   equ $-arr
+    true dd 1
+    false dd 0
 
 section .text
     global _start
@@ -28,12 +30,8 @@ end_loop:
 
 after_loop:
     cmp eax, n
-    je same_floor
-    mov eax, 0x00
-    jmp output
-
-same_floor:
-    mov eax, 0x01
+    cmove eax, [true]
+    cmovne eax, [false]
 
 output:
     call print_number
