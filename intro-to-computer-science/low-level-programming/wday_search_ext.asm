@@ -46,8 +46,8 @@ section .data
 
 section .bss
     align       4
-    read_buffer resb 12 ;буффер длясчитанных данных
-    read_buffer_sz equ $ - read_buffer - 1 ; -1 для терминирующего символа
+    read_buffer resb 12 ;буффер для считанных данных
+    read_buffer_sz equ $ - read_buffer
 
 section .text
     global _start
