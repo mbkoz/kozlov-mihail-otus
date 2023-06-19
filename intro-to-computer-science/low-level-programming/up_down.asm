@@ -1,8 +1,8 @@
 %include 'library.asm'
 
 section .data
-    arr db  'u', 'd', 'd', 'u', 'u', 'd', 'd', 'u', 'u'
-    n   db  9
+    arr db  'u', 'd', 'd', 'u', 'u', 'd', 'd', 'u'
+    n   equ $-arr
 
 section .text
     global _start
@@ -10,9 +10,9 @@ section .text
 _start:
 
     ; Ваш код
-    movsx eax, byte [n] ; если в конце в eax останется число == n, то этаж остался тот же
+    mov eax, n ; если в конце в eax останется число == n, то этаж остался тот же
     mov ebx, arr
-    movsx ecx, byte [n]
+    mov ecx, n
     cmp ecx, 0x00       ; если количество итераций =0, то перенесемся к оценке результата
     je after_loop
 
@@ -27,7 +27,7 @@ end_loop:
     loop start_loop
 
 after_loop:
-    cmp al, byte [n]
+    cmp eax, n
     je same_floor
     mov eax, 0x00
     jmp output

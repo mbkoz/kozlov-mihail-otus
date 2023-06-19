@@ -1,8 +1,8 @@
 %include 'library.asm'
 
 section .data
-    arr dd  17, 21, 13, 17, 14, 12
-    n   dd  6
+    arr dd  17, 21, 13, 17, 17, 12
+    n   equ ($-arr) / 4
 
 align       4
 stack       times 1024 dd 0;
@@ -15,7 +15,7 @@ _start:
     ; инициализация регистров и стека
     xor eax, eax
     xor edx, edx
-    mov ecx, [n]
+    mov ecx, n
     mov ebx, arr
     ; инициализация стека
     mov esp, stack_top

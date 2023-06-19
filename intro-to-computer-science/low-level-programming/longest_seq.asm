@@ -2,7 +2,7 @@
 
 section .data
     arr db  1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
-    n   db  14
+    n   equ $-arr
 
 section .text
     global _start
@@ -10,7 +10,7 @@ section .text
 _start:
     xor edx, edx    ; в edx храним самый длиный отрезок
     mov ebx, arr
-    movsx ecx, byte [n]
+    mov ecx, n
     cmp ecx, 0x00
     je final
 
