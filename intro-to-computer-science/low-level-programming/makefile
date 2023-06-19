@@ -1,5 +1,4 @@
 SOURCES = $(wildcard *.asm)
-
 TARGETS = $(basename $(SOURCES))
 GDBTRG = $(addsuffix _gdb, $(TARGETS))
 OBJECTS = $(addsuffix .o, $(TARGETS))
@@ -21,10 +20,10 @@ $(TARGETS): %: %.o
 %.o: %.asm $(DEPS)
 	nasm $(NSMFLAGS) -o $@ $<
 
-.PHONY: clean
-clean:
-	-rm $(TARGETS) $(OBJECTS) sym_table 2> /dev/null
-
 .PHONY: $(GDBTRG)
 $(GDBTRG): %_gdb: %
 	gdb -x gdb_launch $^
+
+.PHONY: clean
+clean:
+	-rm $(TARGETS) $(OBJECTS) sym_table 2> /dev/null
