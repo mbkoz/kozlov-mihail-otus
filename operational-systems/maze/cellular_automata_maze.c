@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include <inttypes.h>
 
 /**
  * TODO параметры командной строки:
@@ -18,10 +19,10 @@
 enum {
     LIFE_CHANCE_MULT = 1000, // коэффициент для приведения float [0; 1] в единицы 0.1%/LSB
     LIFE_CHANCE_RAND_LIM = LIFE_CHANCE_MULT + 1,
-    DEFAULT_LIFE_CHANCE = 450, // вероятность жизни в клетке по умолчанию 45.1%
-    DEFAULT_HEIGHT = 10,
-    DEFAULT_WIDTH = 10,
-    DEFAULT_ITER_NUMBER = 2,
+    DEFAULT_LIFE_CHANCE = 400, // вероятность жизни в клетке по умолчанию 45.1%
+    DEFAULT_HEIGHT = 100,
+    DEFAULT_WIDTH = 100,
+    DEFAULT_ITER_NUMBER = 4,
     DEFAULT_BIRTH_LIMIT = 4,
     DEFAULT_DEATH_LIMIT = 3
 };
@@ -32,11 +33,11 @@ typedef struct sCoord {
 } Coord;
 
 static inline void printDarkDot(FILE* file, Coord coord) {
-    fprintf(file, "dot %d %d 0 0 0\n", coord.x_, coord.y_);
+    fprintf(file, "dot %"PRIu32" %"PRIu32" 0 0 0\n", coord.x_, coord.y_);
 }
 
 static inline void printLightDot(FILE* file, Coord coord) {
-    fprintf(file, "dot %d %d 255 255 255\n", coord.x_, coord.y_);
+    fprintf(file, "dot %"PRIu32" %"PRIu32" 255 255 255\n", coord.x_, coord.y_);
 }
 
 typedef struct sCellmap {
@@ -107,7 +108,7 @@ void CellmapInit(Cellmap *const cellmap, uint32_t width, uint32_t height, FILE* 
         .mapptr_ = malloc(sizeof(bool[width][height]))
     };
 
-    fprintf(cellmap->output_, "map %d %d 0 0 0\n", width, height);
+    fprintf(cellmap->output_, "map %"PRIu32" %"PRIu32" 0 0 0\n", width, height);
 
     srand(time(NULL));
     bool(*temp)[height] = (bool (*)[height])cellmap->mapptr_;
