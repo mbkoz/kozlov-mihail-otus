@@ -7,9 +7,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <unistd.h>
 
 /**
- * @brief программа читает со стандартного ввода поток команд для строительства лабиринта
+ * @brief программа читает со стандартного ввода поток команд для строительства лабиринта.
  * тактики отображения:
  * покомандная смена кадров (нужен расчет частоты смены для построения лабиринта за 10 секунд)
  * покадровая смена кадров (нужен расчет частоты смены для построения лабиринта за 10 секунд)
@@ -22,10 +23,36 @@
  * 3. длительноть анимации для таймера
 */
 
+
+/**
+ * 2 сущности - загрузчик и построитель кадра (+ медиатор, который обеспечивает работу)
+ * загрузчик покадрово загружает данные из файла(кадр определяется полным заполнением буфера или меткой delim)
+ * загрузчик имеет 2 состояния - синхронная загрузка и асинхронная (когда запускается поток с загрузкой данных
+ * , который работает || с демонстрацией)
+ * ? кто должен читать запись map? вероятно медиатор т.к. он таким образом определит размер памяти для буфера загрузчика
+ * задаст размеры и цвет поля
+ * далее медиатор инициализирует загрузчик
+ * после чего зарустит загрузку, передав в загрузчик размер буфер и размер буфера
+ * загрузчик вернет количество считанных элементов (а в буфер будут записаны объекты для отображения)
+ * если файл закончился, то будет возвращено 0 считанных элементов
+ * загрузчик будет последовательно читать строки из стандартного ввода, пока не встретит delim или буфер не закончится
+ * прочитав очередную строку будет вызвана фабрика, которая считает параметры фигуры и сконструирует объект
+ * пока реализация будет только синхронной
+ * Для инициализации построителя помимо размера окна и его исходного состояния будет добавлены параметры: стратегия построения изображения
+ * (по примитивам или по кадрам) и промотка (по нажатию клавиши/по времени). Думаю уместно поддерживать промотку по нажатию всегда
+*/
+
 enum {
-    DEFAULT_HRES = 480,
-    DEFAULT_WRES = 640,
+    DEFAULT_YRES = 800,     // разрешение экрана по умолчани.
+    DEFAULT_XRES = 640,
+    STATUS_HEAIGHT = 10
 };
+
+void error(const char* str) {
+    fprintf(stderr, "error has occured: %s\n", str);
+    exit(EXIT_FAILURE);
+}
+
 
 typedef struct sColour {
     uint8_t r_;
@@ -33,99 +60,384 @@ typedef struct sColour {
     uint8_t b_;
 } Colour;
 
+static inline ALLEGRO_COLOR Colour_transformToAl(Colour c) {
+    return al_map_rgb(c.r_, c.g_, c.b_);
+}
+
 /**
  * @brief интерфейс "абстрактной фигуры"
 */
 typedef struct sFigure {
-    void *const self_;
-    void (*draw_)(void *const self);
+    void* self_;
+    void (*draw_)(void* const self);
 } Figure;
-
-void drawFigure(const Figure* const f) {
-    f->draw_(f->self_);
-}
 
 
 /**
  * @brief ADT точки
 */
 typedef struct sDot {
-
+    float x1_;
+    float y1_;
+    float x2_;
+    float y2_;
+    Colour colour_;
 } Dot;
+
+void Dot_init(Dot *self, const char* str, float xScale, float yScale);
+void Dot_raw(void *const self);
+
+
+
+void Dot_init(Dot *self, const char* str, float xScale, float yScale) {
+    size_t res = sscanf(
+        str,
+        "dot %f %f %"SCNu8" %"SCNu8" %"SCNu8"", 
+        &self->x1_,
+        &self->y1_,
+        &self->colour_.r_,
+        &self->colour_.g_,
+        &self->colour_.b_
+    );
+
+    if(res != 5){
+        char temp[strlen(str) + 50];
+        sprintf(temp, "invalid data for dot construction [%s]", str);
+        error(temp);
+    }
+
+    self->x1_ *= xScale;
+    self->y1_ *= yScale;
+
+    self->x2_ = self->x1_ + xScale;
+    self->y2_ = self->y1_ + yScale;
+}
+
+void Dot_draw(void* const self) {
+    assert(self);
+    Dot* dot = self;
+    al_draw_filled_rectangle(dot->x1_, dot->y1_, dot->x2_, dot->y2_, Colour_transformToAl(dot->colour_));
+}
 
 /**
  * @brief фабрика для фигур
 */
-Figure createFigure(const char *str, uint8_t xscale, uint8_t yscale);
+Figure createFigure(const char* str, float xscale, float yscale);
 
-int main() {
-    uint32_t width, height;
-    uint8_t red, green, blue;
+/**
+ * @brief "конструктор" точки
+ * @note испольует кучу для создания точки
+*/
+Figure createDot(const char* str, float xScale, float yScale);
+/**
+ * @brief обертка над рисованием абстрактной фигуры
+*/
+void drawFigure(Figure* const f);
+/**
+ * @brief освобождение ресурсов, занимаемых фигурой
+*/
+void destroyFigure(Figure* const f);
 
-    uint32_t ctrl = scanf("map %"SCNu32" %"SCNu32" %"SCNu8" %"SCNu8" %"SCNu8"", &width, &height, &red, &green, &blue);
-    assert(ctrl == 5);
+Figure createFigure(const char* str, float xscale, float yscale) {
+    Figure ret;
+    
+    if (strstr(str, "dot"))
+        ret = createDot(str, xscale, yscale);
+    else{
+        fputs(str, stderr);
+        error("invalid figure");
+    }
 
+    return ret;
+}
+
+Figure createDot(const char* str, float xScale, float yScale) {
+    Dot *dot = malloc(sizeof(Dot));
+
+    if(dot == NULL)
+        error("out of memory");
+
+    Dot_init(dot, str, xScale, yScale);
+    
+    return (Figure){
+        .self_ = (void *)dot,
+        .draw_ = Dot_draw
+    };
+}
+
+void drawFigure(Figure *const f) {
+    f->draw_(f->self_);
+}
+
+void destroyFigure(Figure *const f) {
+    free(f->self_);
+    f->draw_ = NULL;
+}
+
+/**
+ * @brief класс - загрузчик фигур. читает данные с потока до delim (метка кадра) или до конца файла
+*/
+typedef struct sLoader {
+    FILE* src_;
+    bool isEof_;
+    float xScale_;
+    float yScale_;
+} Loader;
+
+void Loader_init(Loader* const self, FILE* src, float xScale, float yScale);
+size_t Loader_loadFigureArray(Loader* const self, Figure* fa, size_t size);
+bool Loader_isLoadingComplete(const Loader *const self);
+void freeFigureArray(Figure *fa, size_t size);
+
+void Loader_init(Loader* const self, FILE* src, float xScale, float yScale) {
+    assert(src);
+    self->src_ = src;
+    self->isEof_ = false;
+    self->xScale_ = xScale;
+    self->yScale_ = yScale;
+}
+
+size_t Loader_loadFigureArray(Loader* const self, Figure* fa, size_t size) {
+    size_t ret = 0;
+    char temp[255] = "";    // буфер для загрузки строки из файла
+
+    for (; ret < size; ++ret) {
+        if(fgets(temp, 255, self->src_) == NULL) {
+            self->isEof_ = true;
+            break;
+        }
+
+        if(strstr(temp, "delim"))
+            break;
+
+        fa[ret] = createFigure(temp, self->xScale_, self->yScale_);
+    }
+
+    return ret;
+}
+
+bool Loader_isLoadingComplete(const Loader* const self) {
+    return self->isEof_;
+}
+
+void freeFigureArray(Figure* fa, size_t size) {
+    for (size_t i = 0; i < size; ++i){
+        destroyFigure(fa + i);
+    }
+}
+
+/**
+ * @brief ADT строки состояния
+*/
+typedef struct sStatusString {
+    float y1_;      // смещение относительно НК
+    float y2_;
+    float width_;   // длина статусной строки
+    ALLEGRO_FONT* font_;
+} StatusString;
+
+void SS_init(StatusString* const self, float shift, float width);
+void SS_deinit(StatusString* const self);
+float SS_getHeight(const StatusString* const self);
+void SS_print(StatusString* const self, const char* str);
+
+void SS_init(StatusString* const self, float shift, float width) {
+    self->font_ = al_create_builtin_font();
+    self->y1_ = shift + 2;
+    self->y2_ = shift + STATUS_HEAIGHT + 2;
+    self->width_ = width;
+}
+
+void SS_deinit(StatusString* const self) {
+    al_destroy_font(self->font_);
+}
+
+float SS_getHeight(const StatusString* const self) {
+    return self->y2_ - self->y1_;
+}
+
+void SS_print(StatusString* const self, const char* str) {
+    al_draw_filled_rectangle(0, self->y1_, self->width_, self->y2_, al_map_rgb(0, 0, 0));
+    al_draw_text(self->font_, al_map_rgb(255, 255, 255), 5, self->y1_, 0, str);
+}
+
+struct sDisplayHandler;
+
+typedef void (*DH_DrawFunctionT)(struct sDisplayHandler* self, Figure* fa, size_t size);
+
+typedef struct sDisplayHandler {
+    ALLEGRO_DISPLAY* display_;
+    ALLEGRO_EVENT_QUEUE* queue_;
+    ALLEGRO_TIMER* timer_;
+    DH_DrawFunctionT draw_;
+    StatusString statusString_;
+    size_t frameNum_;
+} DisplayHandler;
+
+/**
+ * @brief исходная инициализация ADT handler'а графического отображения
+ * задает разрешение по умолчанию и покадровое перелистывание по нажатию клавиши
+*/
+void DH_init(DisplayHandler* const self, uint16_t w, uint16_t h, Colour dc);
+
+// в deinit будем ожидать закрытия окна
+void DH_deinit(DisplayHandler* const self);
+
+void DH_enableTimer(DisplayHandler* const self, float time);
+void DH_enablePrimitiveMode(DisplayHandler* const self);
+
+void DH_drawPerPrimitive(DisplayHandler* const self, Figure* fa, size_t size);
+void DH_drawPerFrame(DisplayHandler* const self, Figure* fa, size_t size);
+
+
+void DH_init(DisplayHandler *const self, uint16_t w, uint16_t h, Colour dc){
     al_init();
     al_init_primitives_addon();
-    
-    ALLEGRO_DISPLAY* display = al_create_display(DEFAULT_WRES, DEFAULT_HRES);
-    ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
-    ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60);
+
+    self->frameNum_ = 0;
+    SS_init(&self->statusString_, h, w);
+
+
+    self->display_ = al_create_display(w, h + SS_getHeight(&self->statusString_));
+    self->queue_ = al_create_event_queue();
+    self->timer_ = NULL;
 
     al_install_keyboard();
 
-    al_register_event_source(queue, al_get_display_event_source(display));
-    al_register_event_source(queue, al_get_keyboard_event_source());
-    al_register_event_source(queue, al_get_timer_event_source(timer));
+    al_register_event_source(self->queue_, al_get_display_event_source(self->display_));
+    al_register_event_source(self->queue_, al_get_keyboard_event_source());
 
-    al_clear_to_color(al_map_rgb(red, green, blue));
-    //al_draw_filled_rectangle(100, 100, 50, 200, al_map_rgb(0, 0, 0));
+    al_clear_to_color(Colour_transformToAl(dc));
 
-    al_start_timer(timer);
+    self->draw_ = DH_drawPerFrame;
+    SS_print(&self->statusString_, "init");
 
-    float xscale = (float)DEFAULT_WRES / width;
-    float yscale = (float)DEFAULT_HRES / height;
+    al_flip_display();
+}
 
-    char temp[255];
-    while (fgets(temp, 255, stdin)) {
-        if(!strstr(temp, "dot"))
-            continue;
+void DH_deinit(DisplayHandler *const self) {
+    char temp[100];
+    sprintf(temp, "%s: %lu (finished)", self->draw_ == DH_drawPerFrame ? "frame" : "diff", self->frameNum_);
+    SS_print(&self->statusString_, temp);
+    al_flip_display();
 
-        //fputs(temp, stdout);
-
-        ALLEGRO_EVENT event;
-
-        uint32_t x, y;
-        uint8_t r, g, b;
-
-        sscanf(temp, "dot %"SCNu32" %"SCNu32" %"SCNu8" %"SCNu8" %"SCNu8"", &x, &y, &r, &g, &b);
-        al_draw_filled_rectangle(x * xscale, y * yscale, x * xscale + xscale, y * yscale + yscale, al_map_rgb(r, g, b));
-
-        //printf("%d %d %d %d %d\n", x, y, r, g, b);
-
-        al_wait_for_event(queue, &event);
-        if(event.type == ALLEGRO_EVENT_TIMER)
-            al_flip_display();
+    ALLEGRO_EVENT event;
+    do{
+        al_wait_for_event(self->queue_, &event);
     }
+    while(event.type != ALLEGRO_EVENT_DISPLAY_CLOSE);
 
-    //al_clear_to_color(al_map_rgb(0, 255, 0));
-
-    bool running = true;
-    while(running) {
-        ALLEGRO_EVENT event;
-        al_wait_for_event(queue, &event);
-
-        if(event.type == ALLEGRO_EVENT_DISPLAY_CLOSE || event.type == ALLEGRO_EVENT_KEY_UP)
-            running = false;
-
-        if(event.type == ALLEGRO_EVENT_TIMER)
-            al_flip_display();
-    }
-
-    al_destroy_display(display);
+    SS_deinit(&self->statusString_);
+    al_destroy_display(self->display_);
     al_uninstall_keyboard();
-    al_destroy_timer(timer);
-    al_destroy_event_queue(queue);
+    
+    if(self->timer_)
+        al_destroy_timer(self->timer_);
+    
+    al_destroy_event_queue(self->queue_);
+}
+
+
+void DH_enableTimer(DisplayHandler* const self, float time) {
+    self->timer_ = al_create_timer(time);
+    al_register_event_source(self->queue_, al_get_timer_event_source(self->timer_));
+    al_start_timer(self->timer_);
+}
+
+void DH_enablePrimitiveMode(DisplayHandler* const self) {
+    self->draw_ = DH_drawPerPrimitive;
+}
+
+static inline void waitTimerOrKeyUp(ALLEGRO_EVENT_QUEUE* q) {
+    ALLEGRO_EVENT event;
+    
+    do{
+        al_wait_for_event(q, &event);
+    }
+    while(event.type != ALLEGRO_EVENT_TIMER && event.type != ALLEGRO_EVENT_KEY_UP);
+}
+
+void DH_drawPerPrimitive(DisplayHandler* const self, Figure* fa, size_t size) {
+    char temp[32];
+
+    for(size_t i = 0; i < size; ++i){
+        sprintf(temp, "diff: %lu", ++self->frameNum_);
+        SS_print(&self->statusString_, temp);
+
+        drawFigure(fa + i);
+        waitTimerOrKeyUp(self->queue_);
+        al_flip_display();
+    }
+}
+
+void DH_drawPerFrame(DisplayHandler* const self, Figure* fa, size_t size) {
+    char temp[32];
+    sprintf(temp, "frame: %lu", ++self->frameNum_);
+    SS_print(&self->statusString_, temp);
+
+    for(size_t i = 0; i < size; ++i)
+        drawFigure(fa + i);
+
+    waitTimerOrKeyUp(self->queue_);
+    al_flip_display();
+}
+
+
+
+int main(int argc, char* argv[]) {
+    uint16_t width, height;
+    Colour colour;
+    // считаем размер поля лабиринта и исходный цвет
+    uint32_t ctrl = scanf("map %"SCNu16" %"SCNu16" %"SCNu8" %"SCNu8" %"SCNu8"\n", &width, &height, &colour.r_, &colour.g_, &colour.b_);
+    assert (ctrl == 5);
+
+    int xres = DEFAULT_XRES;
+    int yres = DEFAULT_YRES;
+
+    if(getopt(argc, argv, "r:"))
+        sscanf(optarg, "%dx%d", &xres, &yres);
+
+    float xscale = (float)xres / width;
+    float yscale = (float)yres / height;
+
+    DisplayHandler dh;
+    DH_init(&dh, xres, yres, colour);
+
+    optind = 1;
+    char ch;
+    while ((ch = getopt(argc, argv, "dt:")) != EOF) {
+        switch (ch) {
+        case 'd':
+            DH_enablePrimitiveMode(&dh);
+            break;
+        case 't':
+            float time = atof(optarg);
+            DH_enableTimer(&dh, time);
+            break;
+        default:
+            break;
+        }
+    }
+
+    Loader loader;
+    Loader_init(&loader, stdin, xscale, yscale);
+
+    size_t fgArraySize = width * height + 1;
+    Figure fgArray[fgArraySize];
+
+    while (!Loader_isLoadingComplete(&loader)) {
+        size_t lSize = Loader_loadFigureArray(&loader, fgArray, fgArraySize);
+
+        dh.draw_(&dh, fgArray, lSize);
+        freeFigureArray(fgArray, lSize);
+    }
+
+    DH_deinit(&dh);
 
     return 0;
 }
+
+
+
+
+
