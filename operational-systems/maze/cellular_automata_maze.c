@@ -26,6 +26,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <getopt.h>
 
 // параметры по умолчанию (DEFAULT_) и именованные константы
 enum {

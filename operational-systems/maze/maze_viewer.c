@@ -26,6 +26,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 
 enum {
     DEFAULT_XRES = 640,     // разрешение экрана по умолчани.
@@ -389,7 +390,7 @@ int main(int argc, char* argv[]) {
 
     optind = 1;
     char ch;
-    while ((ch = getopt(argc, argv, "dt:")) != EOF) {
+    while ((ch = getopt(argc, argv, "rdt:")) != EOF) {
         switch (ch) {
         case 'd':
             DH_enablePrimitiveMode(&dh);
