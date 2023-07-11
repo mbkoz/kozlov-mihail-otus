@@ -105,6 +105,54 @@ void Dot_draw(void* const self) {
 }
 
 /**
+ * @brief ADT прямоугольника
+*/
+typedef struct sRectangle {
+    float x1_;
+    float y1_;
+    float x2_;
+    float y2_;
+    Colour colour_;
+} Rectangle;
+
+void Rectangle_init(Rectangle *self, const char* str, float xScale, float yScale);
+void Rectangle_draw(void *const self);
+
+void Rectangle_init(Rectangle *self, const char* str, float xScale, float yScale) {
+    uint16_t x, y, w, h;
+    
+    size_t res = sscanf(
+        str,
+        "rectangle %"SCNu16" %"SCNu16" %"SCNu16" %"SCNu16" %"SCNu8" %"SCNu8" %"SCNu8"", 
+        &x,
+        &y,
+        &w,
+        &h,
+        &self->colour_.r_,
+        &self->colour_.g_,
+        &self->colour_.b_
+    );
+
+    if(res != 7){
+        char temp[strlen(str) + 50];
+        sprintf(temp, "invalid data for dot construction [%s]", str);
+        error(temp);
+    }
+
+    self->x1_ = x * xScale;
+    self->y1_ = y * yScale;
+
+    self->x2_ = self->x1_ + w * xScale;
+    self->y2_ = self->y1_ + h * yScale;
+}
+
+void Rectangle_draw(void *const self) {
+    assert(self);
+    Rectangle* rec = self;
+    al_draw_filled_rectangle(rec->x1_, rec->y1_, rec->x2_, rec->y2_, Colour_transformToAl(rec->colour_));
+}
+
+/**
  * @brief фабрика для фигур
 */
 Figure createFigure(const char* str, float xscale, float yscale);
@@ -114,6 +162,11 @@ Figure createFigure(const char* str, float xscale, float yscale);
  * @note испольует кучу для создания точки
 */
 Figure createDot(const char* str, float xScale, float yScale);
+/**
+ * @brief "конструктор" прямоугольника
+ * @note испольует кучу для создания точки
+*/
+Figure createRectangle(const char* str, float xScale, float yScale);
 /**
  * @brief обертка над рисованием абстрактной фигуры
 */
@@ -128,6 +181,8 @@ Figure createFigure(const char* str, float xscale, float yscale) {
     
     if (strstr(str, "dot"))
         ret = createDot(str, xscale, yscale);
+    else if (strstr(str, "rectangle"))
+        ret = createRectangle(str, xscale, yscale);
     else{
         fputs(str, stderr);
         error("invalid figure");
@@ -147,6 +202,20 @@ Figure createDot(const char* str, float xScale, float yScale) {
     return (Figure){
         .self_ = (void *)dot,
         .draw_ = Dot_draw
+    };
+}
+
+Figure createRectangle(const char* str, float xScale, float yScale) {
+    Rectangle *rec = malloc(sizeof(Rectangle));
+
+    if(rec == NULL)
+        error("out of memory");
+
+    Rectangle_init(rec, str, xScale, yScale);
+    
+    return (Figure){
+        .self_ = (void *)rec,
+        .draw_ = Rectangle_draw
     };
 }
 
