@@ -9,7 +9,7 @@ bsp_maze: bsp_maze.c
 
 .PHONY: clean
 clean:
-	rm cellular_automata_maze maze_viewer bsp_maze
+	-rm cellular_automata_maze maze_viewer bsp_maze 2> /dev/null
 
 .PHONY: ca_diff_ssize_demo
 ca_diff_ssize_demo: maze_viewer cellular_automata_maze

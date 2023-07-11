@@ -447,9 +447,27 @@ int main(int argc, char* argv[]) {
 
     int xres = DEFAULT_XRES;
     int yres = DEFAULT_YRES;
+    bool diffMode = false;
+    bool enableTimer = false;
+    float time = 0.0;
 
-    if(argc > 1 && getopt(argc, argv, "r:"))
-        sscanf(optarg, "%dx%d", &xres, &yres);
+    char ch;
+    while ((ch = getopt(argc, argv, "r:dt:")) != EOF) {
+        switch (ch) {
+        case 'r':
+            sscanf(optarg, "%dx%d", &xres, &yres);
+            break;
+        case 'd':
+            diffMode = true;
+            break;
+        case 't':
+            enableTimer = true;
+            time = atof(optarg);
+            break;
+        default:
+            break;
+        }
+    }
 
     float xscale = (float)xres / width;
     float yscale = (float)yres / height;
@@ -457,21 +475,10 @@ int main(int argc, char* argv[]) {
     DisplayHandler dh;
     DH_init(&dh, xres, yres, colour);
 
-    optind = 1;
-    char ch;
-    while ((ch = getopt(argc, argv, "rdt:")) != EOF) {
-        switch (ch) {
-        case 'd':
-            DH_enablePrimitiveMode(&dh);
-            break;
-        case 't':
-            float time = atof(optarg);
-            DH_enableTimer(&dh, time);
-            break;
-        default:
-            break;
-        }
-    }
+    if(diffMode)
+        DH_enablePrimitiveMode(&dh);
+    if(enableTimer)
+        DH_enableTimer(&dh, time);
 
     Loader loader;
     Loader_init(&loader, stdin, xscale, yscale);
