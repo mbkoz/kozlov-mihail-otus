@@ -1,0 +1,6 @@
+*
+!.gitignore
+!*.c
+!*.png
+!/Makefile
+!README.md
