@@ -1,5 +1,5 @@
 
-# LANGAGUES AND PROGRAMING
+# LANGUAGES AND PROGRAMMING
 
 ### Грамматика двоичного числа
 
