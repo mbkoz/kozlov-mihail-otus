@@ -1,4 +1,5 @@
-/_build
-/ullib_src/_build
-/.vscode
-/ullib_src/.vscode
+_build/
+/chat_server_build/
+/chat_client_build/
+.vscode/
+/libso/

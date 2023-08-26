@@ -1,10 +1,11 @@
-#include "user_list.h"
+#include "ulist.h"
 #include "sglib.h"
 
 #include <threads.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <getopt.h>
 
 enum {
     STR_LEN = 64,
@@ -207,7 +208,7 @@ void UL_setProfileData(UserList* const self, const char* const login, const char
     }
 }
 
-
+#ifndef LIB_BUILD
 
 static inline void testUserV(const UserList* const ul, const char* const usr, const char* const password) {
     UL_ProfileData pd = UL_getProfileData(ul, usr, password);
@@ -244,7 +245,15 @@ static inline void addUserV(UserList* const ul, const char* const usr, const cha
 }
 
 int main(int argc, char* argv[]) {
-    UserList* ul = UL_create("user_list_file");
+
+    UserList* ul = NULL;
+
+    if(getopt(argc, argv, "f:") != EOF) {
+        ul = UL_create(optarg);
+    }
+    else {
+        ul = UL_create("user_list_file");
+    }
 
     printf("maximum login length: %lu\nmaximum password length: %lu\n\n", UL_getMaxLoginLength(), UL_getMaxPasswordLength());
 
@@ -273,4 +282,4 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-
+#endif
