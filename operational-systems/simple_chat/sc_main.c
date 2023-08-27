@@ -18,7 +18,8 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <signal.h>
-
+#include <ulist.h>
+#include <user.h>
 
 /**
  * выход из сервера по SIGINT (ctrl + C)
@@ -27,6 +28,7 @@
  * можно самостоятельно запускать сигнал
  * при подключении к серверку можно сделать так, чтобы клиент запрашивал некоторые метаданные сервера
  * например максимальную длину имени пользователя и пароля
+ * В регистрации может быть отказано если будет пробита таблица
 */
 
 //#if CLOCKS_PER_SEC > 1000000
@@ -48,29 +50,7 @@ enum {
     DEFAULT_CYCLE_DURATION_CLOCKS = DEFAULT_CYCLE_DURATION_MS * CLOCKS_PER_MS,
 };
 
-/**
- * используем основную структуру User как основную часть для приема собщений и отправки их по адресатам
- * работа с 
-*/
-typedef bool (*AcceptNextMsgFunctionT)(void* const self);
-typedef bool (*SendNextMsgFunctionT)(void* const self);
 
-
-typedef struct sUser {
-    int fd_;                // дескриптор принятого сообщения
-    int epfd_;              // дескриптор 
-    char* const name_;      // имя пользователя
-    // ссылка на хешь таблицу с другими User'ми
-    // ссылка на очередь сообщений 
-    // состояние приема сообщений (прием )
-    AcceptNextMsgFunctionT acceptNextMsg_;
-    // состояние передачи сообщений
-    SendNextMsgFunctionT sendNextMsg_;
-} User;
-
-void USER_init(User* const self) {
-
-}
 
 static inline void setnonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL);
@@ -83,12 +63,13 @@ static void signalrq(int num) {
     exit(EXIT_SUCCESS);
 }
 
-// еще для финиша объектной модела
-// V 1. проверка и корректировка таймингов этапов (получается как получается =( )
-// V 2. добавление своего обработчика сигнала
-// V 3. корректировка формата выводимого времени
-// X 4. подключение библиотеки контейнеров (+ создание хеш таблицы)
-// X 5. добавить error на предельное значение CLOCKS_PER_SECOND
+
+
+
+typedef struct sUser User;
+
+
+
 
 int main(int argc, char* argv[]) {
     // загрузка кеша имен пользователей и паролей
@@ -141,6 +122,9 @@ int main(int argc, char* argv[]) {
     struct sockaddr_storage clientAddr = {0};
     unsigned int clientAddrSize = sizeof(clientAddr);
     int client;
+
+    UserList* ul = UL_create("ul_file");
+    UL_destroy(ul);
 
     while(true) {
         clock_t epollStart = clock();

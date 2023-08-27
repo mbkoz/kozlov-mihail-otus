@@ -19,7 +19,7 @@ FLAGS.release := $(CFLAGS) $(RELFLAGS)
 FLAGS := $(FLAGS.$(BUILD))
 
 
-SRV_SOURCES = sc_main.c
+SRV_SOURCES = sc_main.c user.c utils.c
 SRV_OBJECTS = $(addsuffix .o, $(basename $(SRV_SOURCES)))
 
 SRV_TARGETDIR.debug := $(SRVDIR)/$(DBGDIR)
@@ -36,7 +36,7 @@ $(SRV_TARGETDIR):
 	mkdir -p $(SRV_TARGETDIR)
 
 $(SRV_TARGETDIR)/$(SRV_TARGET): $(addprefix $(SRV_TARGETDIR)/, $(SRV_OBJECTS))
-	$(CC) $? $(SRVFLAGS) -o $@
+	$(CC) $^ $(SRVFLAGS) -o $@
 
 $(SRV_TARGETDIR)/%.o: %.c
 	$(CC) $(FLAGS) -c $? -o $@
