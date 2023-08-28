@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <fcntl.h>
 
 enum {
     SHARED_MSG_LEN = 1024,
@@ -15,6 +16,12 @@ enum {
 static inline void error(const char* const str) {
     fprintf(stderr, "error has occuried: %s, error message: %s\n", strerror(errno), str);
     exit(EXIT_FAILURE);
+}
+
+static inline void setnonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL);
+    if(fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+        error("can't set nonblocking");
 }
 
 /* таблица для регистрации пользователя по номеру сокета */
@@ -40,7 +47,6 @@ void* Iterator_getElementAndAdvance(Iterator* const iter);
 
 
 typedef struct sSharedMsg SharedMsg;
-
 
 SharedMsg* SM_create();
 void SM_destroy(SharedMsg* const self);
