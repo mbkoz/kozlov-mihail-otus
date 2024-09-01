@@ -1,0 +1,45 @@
+maximum login length: 63
+maximum password length: 63
+
+get profile data for login 'misha' password '1111'
+login 'misha' doesn't exist
+
+add profile with login 'misha' password '1111'
+login 'misha' with password '1111' added
+
+get profile data for login 'sasha' password '1111'
+login 'sasha' doesn't exist
+
+get profile data for login 'misha' password '2222'
+incorrect password '2222' for login 'misha'
+
+get profile data for login 'misha' password '1111'
+find login 'misha' with password '1111'
+
+add profile with login 'alesha' password '2222'
+login 'alesha' with password '2222' added
+
+add profile with login 'sasha' password '3333'
+login 'sasha' with password '3333' added
+
+add profile with login 'C()()L_HACKEr' password '4444'
+login 'C()()L_HACKEr' with password '4444' added
+
+add profile with login 'misha' password '1111'
+login 'misha' already exist
+
+add profile with login 'misha' password '2222'
+login 'misha' already exist
+
+get profile data for login 'C()()L_HACKEr' password '4444'
+find login 'C()()L_HACKEr' with password '4444'
+
+get profile data for login 'C()()L_HACKEr' password '42'
+incorrect password '42' for login 'C()()L_HACKEr'
+
+get profile data for login 'elele' password '4444'
+login 'elele' doesn't exist
+
+add profile with login 'misha kozlov' password '2222'
+login 'misha kozlov' or password '2222' have incorrect symbols
+

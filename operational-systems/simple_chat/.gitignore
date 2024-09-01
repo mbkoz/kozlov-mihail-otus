@@ -1,0 +1,5 @@
+_build/
+/chat_server_build/
+/chat_client_build/
+.vscode/
+/libso/
